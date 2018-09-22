@@ -64,7 +64,8 @@ namespace RhinoCommon.Rest
             if (string.IsNullOrWhiteSpace(m_logfile))
             {
                 var now = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                m_logfile = Path.Combine(LogFolder, string.Format("{0}.log", now));
+                var suffix = Env.GetEnvironmentString("COMPUTE_LOG_SUFFIX", "");
+                m_logfile = Path.Combine(LogFolder, string.Format("{0}{1}.log", now, suffix));
                 m_logStartDay = DateTime.UtcNow;
             }
 
@@ -140,11 +141,12 @@ namespace RhinoCommon.Rest
 
         static void Write(NancyContext context, LogLevels severity, string format, params object[] args)
         {
+            var message = string.Format(format, args);
+            Console.WriteLine(string.Format("{0}: {1}", severity.ToString(), message));
+
             if (m_logger == null)
                 return;
 
-            var message = string.Format(format, args);
-            Console.WriteLine(string.Format("{0}: {1}", severity.ToString(), message));
             var data = new Dictionary<string, string>();
             data.Add("message", message);
             Write(context, severity, data);

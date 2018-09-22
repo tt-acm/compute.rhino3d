@@ -8,6 +8,7 @@ using Nancy.TinyIoc;
 using Nancy.Gzip;
 using System.Collections.Generic;
 using RhinoCommon.Rest.Authentication;
+using System.Net.Http;
 
 namespace RhinoCommon.Rest
 {
@@ -28,6 +29,14 @@ namespace RhinoCommon.Rest
             int http_port = Env.GetEnvironmentInt("COMPUTE_HTTP_PORT", 80);
 #endif
 
+            if (Env.GetEnvironmentBool("COMPUTE_RUNNING_AS_BACKEND", false))
+                PerformFrontendFunctions = false;
+            if (Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", "") != "")
+            {
+                PerformBackendFunctions = false;
+                IsRunningAsProxy = true;
+            }
+
             Topshelf.HostFactory.Run(x =>
             {
                 x.ApplyCommandLine();
@@ -46,7 +55,11 @@ namespace RhinoCommon.Rest
             RhinoLib.ExitInProcess();
         }
 
+        public static bool IsRunningAsProxy { get; set; } = false;
 
+        public static bool PerformFrontendFunctions { get; set; } = true;
+
+        public static bool PerformBackendFunctions { get; set; } = true;
     }
 
     public class NancySelfHost
@@ -57,8 +70,32 @@ namespace RhinoCommon.Rest
         public void Start(int http_port, int https_port)
         {
             Logger.Init();
-            Logger.Info(null, $"Launching RhinoCore library as {Environment.UserName}");
-            RhinoLib.LaunchInProcess(RhinoLib.LoadMode.Headless, 0);
+            if (Program.IsRunningAsProxy)
+            {
+                // Set up compute to run on a secondary process
+                // Proxy requests through to the backend process.
+
+                var info = new System.Diagnostics.ProcessStartInfo();
+                info.UseShellExecute = false;
+                foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+                {
+                    info.Environment.Add((string)entry.Key, (string)entry.Value);
+                }
+                info.Environment.Remove("COMPUTE_BACKEND_PORT");
+                info.Environment.Add("COMPUTE_RUNNING_AS_BACKEND", "1");
+                info.Environment.Add("COMPUTE_HTTP_PORT", Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", ""));
+                info.Environment.Add("COMPUTE_LOG_SUFFIX", "-backend");
+                info.CreateNoWindow = false;
+
+                info.FileName = System.Reflection.Assembly.GetEntryAssembly().Location;
+
+                System.Diagnostics.Process.Start(info);
+            }
+            else
+            {
+                Logger.Info(null, $"Launching RhinoCore library as {Environment.UserName}");
+                RhinoLib.LaunchInProcess(RhinoLib.LoadMode.Headless, 0);
+            }
             var config = new HostConfiguration();
             var listenUriList = new List<Uri>();
 
@@ -81,7 +118,7 @@ namespace RhinoCommon.Rest
             {
                 Logger.Error(null, Environment.NewLine + "URL Not Reserved. From an elevated command promt, run:" + Environment.NewLine);
                 foreach (var uri in listenUriList)
-                    Logger.Error(null, $"netsh http add urlacl url=\"{uri.Scheme}://+:{uri.Port}/\" user=\"Everyone\"");
+                    Logger.Error(null, $"netsh http add urlacl url={uri.Scheme}://+:{uri.Port}/ user=Everyone");
                 Environment.Exit(1);
             }
         }
@@ -100,14 +137,18 @@ namespace RhinoCommon.Rest
         {
             Logger.Debug(null, "ApplicationStartup");
             pipelines.AddRequestId();
-            pipelines.EnableGzipCompression(new GzipCompressionSettings() { MinimumBytes = 1024 });
 
-            if (Env.GetEnvironmentBool("COMPUTE_AUTH_RHINOACCOUNT", false))
-                pipelines.AddAuthRhinoAccount();
-            pipelines.AddRequestStashing();
-            if (Env.GetEnvironmentBool("COMPUTE_AUTH_APIKEY", false))
-                pipelines.AddAuthApiKey();
+            if (Program.PerformFrontendFunctions)
+            {
+                pipelines.EnableGzipCompression(new GzipCompressionSettings() { MinimumBytes = 1024 });
 
+                if (Env.GetEnvironmentBool("COMPUTE_AUTH_RHINOACCOUNT", false))
+                    pipelines.AddAuthRhinoAccount();
+                pipelines.AddRequestStashing();
+                if (Env.GetEnvironmentBool("COMPUTE_AUTH_APIKEY", false))
+                    pipelines.AddAuthApiKey();
+
+            }
             base.ApplicationStartup(container, pipelines);
         }
 
@@ -136,6 +177,86 @@ namespace RhinoCommon.Rest
     public class RhinoModule : Nancy.NancyModule
     {
         public RhinoModule()
+        {
+            if (Program.IsRunningAsProxy)
+                SetupProxyEndpoints(Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", ""));
+            else
+                SetupRhinoEndpoints();
+        }
+
+        public void SetupProxyEndpoints(string backendPort)
+        {
+            Get["/"] =
+            Get["/{uri*}"] = _ =>
+            {
+                var url = (string)_.uri;
+                var proxy_url = $"http://localhost:{backendPort}/{url}";
+                var client = new HttpClient();
+                foreach(var header in Context.Request.Headers)
+                {
+                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+                client.DefaultRequestHeaders.Add("x-compute-id", (string)Context.Items["x-compute-id"]);
+                client.DefaultRequestHeaders.Add("x-compute-host", (string)Context.Items["x-compute-host"]);
+                var proxy_response = client.GetAsync(proxy_url).Result;
+
+                var response = (Nancy.Response)proxy_response.Content.ReadAsStringAsync().Result;
+                foreach (var header in proxy_response.Headers)
+                {
+                    foreach (var value in header.Value)
+                        response.Headers.Add(header.Key, value);
+                }
+                return response;
+            };
+
+            Post["/"] =
+            Post["/{uri*}"] = _ =>
+            {
+                var url = (string)_.uri;
+                var proxy_url = $"http://localhost:{backendPort}/{url}";
+                var client = new HttpClient();
+                foreach (var header in Context.Request.Headers)
+                {
+                    if (header.Key == "Content-Length")
+                        continue;
+                    if (header.Key == "Content-Type")
+                        continue;
+                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+                client.DefaultRequestHeaders.Add("x-compute-id", (string)Context.Items["x-compute-id"]);
+                client.DefaultRequestHeaders.Add("x-compute-host", (string)Context.Items["x-compute-host"]);
+
+                object o_content;
+                StringContent content;
+                if (Context.Items.TryGetValue("request-body", out o_content))
+                    content = new StringContent(o_content as string);
+                else
+                    content = new StringContent(Context.Request.Body.AsString());
+
+                Nancy.Response response = null;
+                try
+                {
+                    var proxy_response = client.PostAsync(proxy_url, content).Result;
+                    string responseBody = proxy_response.Content.ReadAsStringAsync().Result;
+                    response = (Nancy.Response)responseBody;
+                    response.StatusCode = (Nancy.HttpStatusCode)proxy_response.StatusCode;
+                    foreach (var header in proxy_response.Headers)
+                    {
+                        foreach (var value in header.Value)
+                            response.Headers.Add(header.Key, value);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    response = (Nancy.Response)ex.Message;
+                    response.StatusCode = Nancy.HttpStatusCode.InternalServerError;
+                }
+
+                return response;
+            };
+        }
+
+        public void SetupRhinoEndpoints()
         {
             Get["/healthcheck"] = _ => "healthy";
 
@@ -178,9 +299,9 @@ namespace RhinoCommon.Rest
                         {
                             bool multiple = false;
                             Dictionary<string, string> returnModifiers = null;
-                            foreach(string name in Request.Query)
+                            foreach (string name in Request.Query)
                             {
-                                if( name.StartsWith("return.", StringComparison.InvariantCultureIgnoreCase))
+                                if (name.StartsWith("return.", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     if (returnModifiers == null)
                                         returnModifiers = new Dictionary<string, string>();

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RhinoCommon.Rest
 {
@@ -20,8 +21,19 @@ namespace RhinoCommon.Rest
 
         private static Response SetRequestId(NancyContext context)
         {
-            context.Items.Add("x-compute-id", Guid.NewGuid().ToString());
-            context.Items.Add("x-compute-host", GetFQDN());
+            var request_id = context.Request.Headers["x-compute-id"].FirstOrDefault();
+            var compute_host = context.Request.Headers["x-compute-host"].FirstOrDefault();
+
+            if (string.IsNullOrEmpty(request_id))
+                context.Items.Add("x-compute-id", Guid.NewGuid().ToString());
+            else
+                context.Items.Add("x-compute-id", request_id);
+
+            if (string.IsNullOrEmpty(request_id))
+                context.Items.Add("x-compute-host", GetFQDN());
+            else
+                context.Items.Add("x-compute-host", compute_host);
+
             context.Items.Add("x-start-ticks", DateTime.UtcNow.Ticks);
             return null;
         }
@@ -30,10 +42,14 @@ namespace RhinoCommon.Rest
         {
             // TODO: The response ID should be set very early in the response handler and used in our internal logging.
             // Then, that ID should be returned here.
-            context.Response.Headers.Add("x-compute-id", context.Items["x-compute-id"] as string);
-            context.Response.Headers.Add("x-compute-host", context.Items["x-compute-host"] as string);
+            if (Program.PerformFrontendFunctions)
+            { 
+                context.Response.Headers.Add("x-compute-id", context.Items["x-compute-id"] as string);
+                context.Response.Headers.Add("x-compute-host", context.Items["x-compute-host"] as string);
+            }
             var data = new Dictionary<string, string>();
             data.Add("message", "complete");
+            data.Add("statusCode", ((int)context.Response.StatusCode).ToString());
 
             var now = DateTime.UtcNow.Ticks;
             object start;
@@ -48,9 +64,12 @@ namespace RhinoCommon.Rest
 
         private static void AddCORSSupport(NancyContext context)
         {
-            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-            context.Response.Headers.Add("Access-Control-Allow-Methods", "OPTIONS,POST,GET");
-            context.Response.Headers.Add("Access-Control-Allow-Headers", "*");
+            if (Program.PerformFrontendFunctions)
+            {
+                context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                context.Response.Headers.Add("Access-Control-Allow-Methods", "OPTIONS,POST,GET");
+                context.Response.Headers.Add("Access-Control-Allow-Headers", "*");
+            }
         }
 
         public static string GetFQDN()
