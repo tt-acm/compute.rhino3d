@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Text;
 
-namespace RhinoCommon.Rest
+namespace compute.geometry
 {
     public enum LogLevels
     {

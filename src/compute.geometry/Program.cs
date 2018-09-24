@@ -7,9 +7,9 @@ using Nancy.Bootstrapper;
 using Nancy.TinyIoc;
 using Nancy.Gzip;
 using System.Collections.Generic;
-using RhinoCommon.Rest.Authentication;
+using compute.geometry.Authentication;
 
-namespace RhinoCommon.Rest
+namespace compute.geometry
 {
     class Program
     {

@@ -1,7 +1,7 @@
 ﻿using Nancy.Extensions;
 using System.Net.Http;
 
-namespace RhinoCommon.Rest
+namespace compute.geometry
 {
     public class ProxyModule : Nancy.NancyModule
     {

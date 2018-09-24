@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RhinoCommon.Rest
+namespace compute.geometry
 {
     using System.Net;
     using System.Net.NetworkInformation;

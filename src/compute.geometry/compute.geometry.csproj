@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{01757ED0-58C4-47DA-926A-70ACD31B93E1}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>RhinoCommon.Rest</RootNamespace>
-    <AssemblyName>RhinoCommon.Rest</AssemblyName>
+    <RootNamespace>compute.geometry</RootNamespace>
+    <AssemblyName>compute.geometry</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -132,7 +132,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="favicon.ico" />
