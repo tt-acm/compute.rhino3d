@@ -89,8 +89,6 @@ namespace compute.geometry
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines)
         {
             Logger.Debug(null, "ApplicationStartup");
-            pipelines.AddRequestId();
-
             base.ApplicationStartup(container, pipelines);
         }
 
@@ -107,7 +105,7 @@ namespace compute.geometry
 
         private byte[] LoadFavIcon()
         {
-            using (var resourceStream = GetType().Assembly.GetManifestResourceStream("rhinocommon.geometry.favicon.ico"))
+            using (var resourceStream = GetType().Assembly.GetManifestResourceStream("compute.geometry.favicon.ico"))
             {
                 var memoryStream = new System.IO.MemoryStream();
                 resourceStream.CopyTo(memoryStream);

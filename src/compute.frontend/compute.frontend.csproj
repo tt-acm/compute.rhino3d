@@ -95,14 +95,12 @@
     <Compile Include="Authentication\ApiKey.cs" />
     <Compile Include="Authentication\RhinoAccounts.cs" />
     <Compile Include="Environment.cs" />
-    <Compile Include="FixedEndpoints.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Frontend.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Proxy.cs" />
     <Compile Include="RequestIdPipeline.cs" />
     <Compile Include="RequestStashing.cs" />
-    <Compile Include="RhinoLib.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
