@@ -8,7 +8,6 @@ using Nancy.TinyIoc;
 using Nancy.Gzip;
 using System.Collections.Generic;
 using RhinoCommon.Rest.Authentication;
-using System.Net.Http;
 
 namespace RhinoCommon.Rest
 {
@@ -31,8 +30,9 @@ namespace RhinoCommon.Rest
 
             if (Env.GetEnvironmentBool("COMPUTE_RUNNING_AS_BACKEND", false))
                 PerformFrontendFunctions = false;
-            if (Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", "") != "")
+            if (Env.GetEnvironmentBool("COMPUTE_RUN_SPLITBRAIN", false))
             {
+                BackendPort = Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", "");
                 PerformBackendFunctions = false;
                 IsRunningAsProxy = true;
             }
@@ -49,10 +49,20 @@ namespace RhinoCommon.Rest
                   });
                 x.RunAsPrompt();
                 //x.RunAsLocalService();
-                x.SetDisplayName("RhinoCommon Geometry Server");
-                x.SetServiceName("RhinoCommon Geometry Server");
+                x.SetDisplayName(ServiceName);
+                x.SetServiceName(ServiceName);
             });
             RhinoLib.ExitInProcess();
+        }
+
+        public static string ServiceName {
+            get
+            {
+                if (IsRunningAsProxy)
+                    return "RhinoCommon Front-End Server";
+                else
+                    return "RhinoCommon Geometry Server";
+            }
         }
 
         public static bool IsRunningAsProxy { get; set; } = false;
@@ -60,11 +70,14 @@ namespace RhinoCommon.Rest
         public static bool PerformFrontendFunctions { get; set; } = true;
 
         public static bool PerformBackendFunctions { get; set; } = true;
+
+        public static string BackendPort { get; set; }
     }
 
     public class NancySelfHost
     {
         private NancyHost _nancyHost;
+        private System.Diagnostics.Process _backendProcess = null;
         public static bool RunningHttps { get; set; }
 
         public void Start(int http_port, int https_port)
@@ -72,24 +85,7 @@ namespace RhinoCommon.Rest
             Logger.Init();
             if (Program.IsRunningAsProxy)
             {
-                // Set up compute to run on a secondary process
-                // Proxy requests through to the backend process.
-
-                var info = new System.Diagnostics.ProcessStartInfo();
-                info.UseShellExecute = false;
-                foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
-                {
-                    info.Environment.Add((string)entry.Key, (string)entry.Value);
-                }
-                info.Environment.Remove("COMPUTE_BACKEND_PORT");
-                info.Environment.Add("COMPUTE_RUNNING_AS_BACKEND", "1");
-                info.Environment.Add("COMPUTE_HTTP_PORT", Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", ""));
-                info.Environment.Add("COMPUTE_LOG_SUFFIX", "-backend");
-                info.CreateNoWindow = false;
-
-                info.FileName = System.Reflection.Assembly.GetEntryAssembly().Location;
-
-                System.Diagnostics.Process.Start(info);
+                SpawnBackendProcess();
             }
             else
             {
@@ -97,6 +93,9 @@ namespace RhinoCommon.Rest
                 RhinoLib.LaunchInProcess(RhinoLib.LoadMode.Headless, 0);
             }
             var config = new HostConfiguration();
+#if DEBUG
+            config.RewriteLocalhost = false;  // Don't require URL registration for localhost when debugging
+#endif
             var listenUriList = new List<Uri>();
 
             if (http_port > 0)
@@ -107,12 +106,12 @@ namespace RhinoCommon.Rest
             if (listenUriList.Count > 0)
                 _nancyHost = new NancyHost(config, listenUriList.ToArray());
             else
-                Logger.Info(null, "ERROR: neither http_port nor https_port are set; NOT LISTENING!");
+                Logger.Error(null, "Neither http_port nor https_port are set; NOT LISTENING!");
             try
             {
                 _nancyHost.Start();
                 foreach (var uri in listenUriList)
-                    Logger.Info(null, $"Running on {uri.OriginalString}");
+                    Logger.Info(null, $"{Program.ServiceName}: running on {uri.OriginalString}");
             }
             catch (Nancy.Hosting.Self.AutomaticUrlReservationCreationFailureException)
             {
@@ -123,8 +122,44 @@ namespace RhinoCommon.Rest
             }
         }
 
+        private void SpawnBackendProcess()
+        {
+            // Set up compute to run on a secondary process
+            // Proxy requests through to the backend process.
+            var info = new System.Diagnostics.ProcessStartInfo();
+            info.UseShellExecute = false;
+            foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
+            {
+                info.Environment.Add((string)entry.Key, (string)entry.Value);
+            }
+            info.Environment.Remove("COMPUTE_BACKEND_PORT");
+            info.Environment.Remove("COMPUTE_RUN_SPLITBRAIN");
+            info.Environment.Add("COMPUTE_RUNNING_AS_BACKEND", "1");
+            info.Environment.Add("COMPUTE_HTTP_PORT", Program.BackendPort);
+            info.Environment.Add("COMPUTE_LOG_SUFFIX", "-backend");
+
+            info.FileName = System.Reflection.Assembly.GetEntryAssembly().Location;
+
+            Logger.Info(null, $"Starting back-end geometry service on port {Program.BackendPort}");
+            _backendProcess = System.Diagnostics.Process.Start(info);
+            _backendProcess.EnableRaisingEvents = true;
+            _backendProcess.Exited += _backendProcess_Exited;
+        }
+
+        private void _backendProcess_Exited(object sender, EventArgs e)
+        {
+            var process = sender as System.Diagnostics.Process;
+            if (process?.ExitCode == -1)
+                return;  // Process is closing from Ctrl+C on console
+
+            _backendProcess = null;
+            SpawnBackendProcess();
+        }
+
         public void Stop()
         {
+            if (_backendProcess != null)
+                _backendProcess.Kill();
             _nancyHost.Stop();
         }
     }
@@ -179,85 +214,8 @@ namespace RhinoCommon.Rest
         public RhinoModule()
         {
             if (Program.IsRunningAsProxy)
-                SetupProxyEndpoints(Env.GetEnvironmentString("COMPUTE_BACKEND_PORT", ""));
-            else
-                SetupRhinoEndpoints();
-        }
+                return;
 
-        public void SetupProxyEndpoints(string backendPort)
-        {
-            Get["/"] =
-            Get["/{uri*}"] = _ =>
-            {
-                var url = (string)_.uri;
-                var proxy_url = $"http://localhost:{backendPort}/{url}";
-                var client = new HttpClient();
-                foreach(var header in Context.Request.Headers)
-                {
-                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                }
-                client.DefaultRequestHeaders.Add("x-compute-id", (string)Context.Items["x-compute-id"]);
-                client.DefaultRequestHeaders.Add("x-compute-host", (string)Context.Items["x-compute-host"]);
-                var proxy_response = client.GetAsync(proxy_url).Result;
-
-                var response = (Nancy.Response)proxy_response.Content.ReadAsStringAsync().Result;
-                foreach (var header in proxy_response.Headers)
-                {
-                    foreach (var value in header.Value)
-                        response.Headers.Add(header.Key, value);
-                }
-                return response;
-            };
-
-            Post["/"] =
-            Post["/{uri*}"] = _ =>
-            {
-                var url = (string)_.uri;
-                var proxy_url = $"http://localhost:{backendPort}/{url}";
-                var client = new HttpClient();
-                foreach (var header in Context.Request.Headers)
-                {
-                    if (header.Key == "Content-Length")
-                        continue;
-                    if (header.Key == "Content-Type")
-                        continue;
-                    client.DefaultRequestHeaders.Add(header.Key, header.Value);
-                }
-                client.DefaultRequestHeaders.Add("x-compute-id", (string)Context.Items["x-compute-id"]);
-                client.DefaultRequestHeaders.Add("x-compute-host", (string)Context.Items["x-compute-host"]);
-
-                object o_content;
-                StringContent content;
-                if (Context.Items.TryGetValue("request-body", out o_content))
-                    content = new StringContent(o_content as string);
-                else
-                    content = new StringContent(Context.Request.Body.AsString());
-
-                Nancy.Response response = null;
-                try
-                {
-                    var proxy_response = client.PostAsync(proxy_url, content).Result;
-                    string responseBody = proxy_response.Content.ReadAsStringAsync().Result;
-                    response = (Nancy.Response)responseBody;
-                    response.StatusCode = (Nancy.HttpStatusCode)proxy_response.StatusCode;
-                    foreach (var header in proxy_response.Headers)
-                    {
-                        foreach (var value in header.Value)
-                            response.Headers.Add(header.Key, value);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    response = (Nancy.Response)ex.Message;
-                    response.StatusCode = Nancy.HttpStatusCode.InternalServerError;
-                }
-
-                return response;
-            };
-        }
-
-        public void SetupRhinoEndpoints()
-        {
             Get["/healthcheck"] = _ => "healthy";
 
             var endpoints = EndPointDictionary.GetDictionary();
@@ -322,5 +280,6 @@ namespace RhinoCommon.Rest
                 };
             }
         }
+
     }
 }

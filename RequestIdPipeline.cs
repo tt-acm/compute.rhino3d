@@ -48,7 +48,6 @@ namespace RhinoCommon.Rest
                 context.Response.Headers.Add("x-compute-host", context.Items["x-compute-host"] as string);
             }
             var data = new Dictionary<string, string>();
-            data.Add("message", "complete");
             data.Add("statusCode", ((int)context.Response.StatusCode).ToString());
 
             var now = DateTime.UtcNow.Ticks;

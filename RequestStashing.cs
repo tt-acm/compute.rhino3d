@@ -37,11 +37,12 @@ namespace RhinoCommon.Rest
             if (context.Request.Method != "POST")
                 return null;
 
-            object request_id = null;
-            if (!context.Items.TryGetValue("x-compute-id", out request_id))
+            object request_id_obj = null;
+            if (!context.Items.TryGetValue("x-compute-id", out request_id_obj))
             {
                 return null;
             }
+            string requestId = request_id_obj as string;
 
             var bucket = Environment.GetEnvironmentVariable("COMPUTE_STASH_S3_BUCKET");
             if (string.IsNullOrWhiteSpace(bucket))
@@ -71,10 +72,30 @@ namespace RhinoCommon.Rest
             }
 
             var por = new Amazon.S3.Model.PutObjectRequest();
-            por.Key = request_id as string;
+            por.Key = requestId;
             por.BucketName = bucket;
             por.ContentBody = GetRequestJson(context);
-            client.PutObjectAsync(por);
+            client.PutObjectAsync(por).ContinueWith(c => {
+                Logger.Info(context, $"Stashed request to {requestId}");
+            });
+
+            return null;
+        }
+
+        public static Response TempFileStasher(NancyContext context)
+        {
+            if (context.Request.Method != "POST")
+                return null;
+
+            var stashDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Compute", "Requests");
+            if (!System.IO.Directory.Exists(stashDir))
+                System.IO.Directory.CreateDirectory(stashDir);
+
+            string requestId = context.Items["x-compute-id"] as string;
+            string filename = System.IO.Path.Combine(stashDir, $"{requestId}.request.log");
+
+            System.IO.File.WriteAllText(filename, GetRequestJson(context));
+            Logger.Info(context, $"Stashed request to {requestId}");
 
             return null;
         }
@@ -99,22 +120,6 @@ namespace RhinoCommon.Rest
             }
             request.Add("headers", headers);
             return request.ToString();
-        }
-
-        public static Response TempFileStasher(NancyContext context)
-        {
-            if (context.Request.Method != "POST")
-                return null;
-
-            var stashDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "Compute", "Requests");
-            if (!System.IO.Directory.Exists(stashDir))
-                System.IO.Directory.CreateDirectory(stashDir);
-
-            string filename = System.IO.Path.Combine(stashDir, string.Format("{0}.request.log", context.Items["x-compute-id"]));
-
-            System.IO.File.WriteAllText(filename, GetRequestJson(context));
-
-            return null;
         }
     }
 }
