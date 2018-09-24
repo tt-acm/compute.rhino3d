@@ -107,7 +107,7 @@ namespace compute.geometry
 
         private byte[] LoadFavIcon()
         {
-            using (var resourceStream = GetType().Assembly.GetManifestResourceStream("RhinoCommon.Rest.favicon.ico"))
+            using (var resourceStream = GetType().Assembly.GetManifestResourceStream("rhinocommon.geometry.favicon.ico"))
             {
                 var memoryStream = new System.IO.MemoryStream();
                 resourceStream.CopyTo(memoryStream);
