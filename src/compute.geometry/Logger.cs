@@ -64,7 +64,7 @@ namespace compute.geometry
             if (string.IsNullOrWhiteSpace(m_logfile))
             {
                 var now = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                var suffix = "geometry";
+                var suffix = "-geometry";
                 m_logfile = Path.Combine(LogFolder, string.Format("{0}{1}.log", now, suffix));
                 m_logStartDay = DateTime.UtcNow;
             }

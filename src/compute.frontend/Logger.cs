@@ -64,7 +64,7 @@ namespace compute.frontend
             if (string.IsNullOrWhiteSpace(m_logfile))
             {
                 var now = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                var suffix = "frontend";
+                var suffix = "-frontend";
                 m_logfile = Path.Combine(LogFolder, string.Format("{0}{1}.log", now, suffix));
                 m_logStartDay = DateTime.UtcNow;
             }
