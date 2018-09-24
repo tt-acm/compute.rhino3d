@@ -5,7 +5,6 @@ using Topshelf;
 using Nancy.Conventions;
 using Nancy.Bootstrapper;
 using Nancy.TinyIoc;
-using Nancy.Gzip;
 using System.Collections.Generic;
 
 namespace compute.geometry
