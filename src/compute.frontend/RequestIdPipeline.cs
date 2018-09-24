@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace compute.geometry
+namespace compute.frontend
 {
     using System.Net;
     using System.Net.NetworkInformation;
@@ -16,6 +16,7 @@ namespace compute.geometry
         {
             pipelines.BeforeRequest += SetRequestId;
             pipelines.AfterRequest += SetHostName;
+            pipelines.AfterRequest += AddCORSSupport;
         }
 
         private static Response SetRequestId(NancyContext context)
@@ -41,6 +42,8 @@ namespace compute.geometry
         {
             // TODO: The response ID should be set very early in the response handler and used in our internal logging.
             // Then, that ID should be returned here.
+            context.Response.Headers.Add("x-compute-id", context.Items["x-compute-id"] as string);
+            context.Response.Headers.Add("x-compute-host", context.Items["x-compute-host"] as string);
             var data = new Dictionary<string, string>();
             data.Add("statusCode", ((int)context.Response.StatusCode).ToString());
 
@@ -53,6 +56,13 @@ namespace compute.geometry
             }
 
             Logger.Info(context, data);
+        }
+
+        private static void AddCORSSupport(NancyContext context)
+        {
+            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            context.Response.Headers.Add("Access-Control-Allow-Methods", "OPTIONS,POST,GET");
+            context.Response.Headers.Add("Access-Control-Allow-Headers", "*");
         }
 
         public static string GetFQDN()

@@ -2,7 +2,7 @@
 using Nancy;
 using Nancy.Bootstrapper;
 
-namespace compute.geometry.Authentication
+namespace compute.frontend.Authentication
 {
     public static class ApiKeyAuth
     {

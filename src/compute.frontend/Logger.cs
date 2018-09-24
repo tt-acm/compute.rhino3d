@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Text;
 
-namespace compute.geometry
+namespace compute.frontend
 {
     public enum LogLevels
     {
@@ -152,7 +152,7 @@ namespace compute.geometry
 #if DEBUG
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("GEOM ");
+            sb.Append("PROX ");
 
             sb.Append(severity.ToString()).Append(": ");
 
@@ -171,7 +171,7 @@ namespace compute.geometry
                 return;
 
             var log = new JObject();
-            log.Add("layer", "geometry");
+            log.Add("layer", "frontend");
             log.Add("dateTime", DateTime.UtcNow.ToString("o")); // ISO 8601 format
             log.Add("severity", severity.ToString());
 

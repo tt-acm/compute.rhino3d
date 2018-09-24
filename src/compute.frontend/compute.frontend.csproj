@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{01757ED0-58C4-47DA-926A-70ACD31B93E1}</ProjectGuid>
+    <ProjectGuid>{5AE28138-B0A2-40C1-B62C-67CC7371E992}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>compute.geometry</RootNamespace>
-    <AssemblyName>compute.geometry</AssemblyName>
+    <RootNamespace>compute.frontend</RootNamespace>
+    <AssemblyName>compute.frontend</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -92,15 +92,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EndPoint.cs" />
-    <Compile Include="EndPointDictionary.cs" />
+    <Compile Include="Authentication\ApiKey.cs" />
+    <Compile Include="Authentication\RhinoAccounts.cs" />
     <Compile Include="Environment.cs" />
     <Compile Include="FixedEndpoints.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="RhinoCompute.cs" />
+    <Compile Include="Proxy.cs" />
     <Compile Include="RequestIdPipeline.cs" />
+    <Compile Include="RequestStashing.cs" />
     <Compile Include="RhinoLib.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,16 +1,13 @@
 ﻿using Nancy.Extensions;
 using System.Net.Http;
 
-namespace compute.geometry
+namespace compute.frontend
 {
     public class ProxyModule : Nancy.NancyModule
     {
         public ProxyModule()
         {
-            if (!Program.IsRunningAsProxy)
-                return;
-
-            string backendPort = Program.BackendPort;
+            int backendPort = Env.GetEnvironmentInt("COMPUTE_BACKEND_PORT", 8081);
 
             Get["/"] =
             Get["/{uri*}"] = _ =>
@@ -52,7 +49,7 @@ namespace compute.geometry
             };
         }
 
-        string GetProxyUrl(string path, string backendPort)
+        string GetProxyUrl(string path, int backendPort)
         {
             return $"http://localhost:{backendPort}/{path}";
         }

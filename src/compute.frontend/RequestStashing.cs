@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 using Amazon.S3;
 
 
-namespace compute.geometry
+namespace compute.frontend
 {
     public enum StashProviders
     {
