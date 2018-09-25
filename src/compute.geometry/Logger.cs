@@ -90,7 +90,8 @@ namespace compute.geometry
 
         public static void Init()
         {
-            if (Env.GetEnvironmentBool("COMPUTE_LOG_TEMPFILE", true))
+            var method = Env.GetEnvironmentString("COMPUTE_LOG_METHOD", "TEMPFILE");
+            if (method == "TEMPFILE")
             {
                 Init(new TempFileLogger());
             }

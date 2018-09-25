@@ -138,11 +138,13 @@ namespace compute.frontend
 
             pipelines.EnableGzipCompression(new GzipCompressionSettings() { MinimumBytes = 1024 });
 
-            if (Env.GetEnvironmentBool("COMPUTE_AUTH_RHINOACCOUNT", false))
+            var auth_method = Env.GetEnvironmentString("COMPUTE_AUTH_METHOD", "");
+
+            if (auth_method == "RHINO_ACCOUNT")
                 pipelines.AddAuthRhinoAccount();
-            pipelines.AddRequestStashing();
-            if (Env.GetEnvironmentBool("COMPUTE_AUTH_APIKEY", false))
+            else if (auth_method == "API_KEY")
                 pipelines.AddAuthApiKey();
+            pipelines.AddRequestStashing();
 
             base.ApplicationStartup(container, pipelines);
         }

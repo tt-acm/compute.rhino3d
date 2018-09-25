@@ -21,15 +21,21 @@ namespace compute.frontend
 
         public static void AddRequestStashing(this IPipelines pipelines)
         {
-            if (Env.GetEnvironmentBool("COMPUTE_STASH_TEMPFILE", false))
+            var stash_method = Env.GetEnvironmentString("COMPUTE_STASH_METHOD", "TEMPFILE");
+            switch (stash_method)
             {
-                pipelines.BeforeRequest += TempFileStasher;
-                Logger.Info(null, "Request stashing enabled via TempFileStasher");
-            }
-            if (Env.GetEnvironmentBool("COMPUTE_STASH_AMAZONS3", false))
-            {
-                pipelines.BeforeRequest += AmazonS3RequestStasher;
-                Logger.Info(null, "Request stashing enabled via AmazonS3RequestStasher");
+                case "TEMPFILE":
+                {
+                    pipelines.BeforeRequest += TempFileStasher;
+                    Logger.Info(null, "Request stashing enabled via TempFileStasher");
+                    break;
+                }
+                case "AMAZONS3":
+                {
+                    pipelines.BeforeRequest += AmazonS3RequestStasher;
+                    Logger.Info(null, "Request stashing enabled via AmazonS3RequestStasher");
+                    break;
+                }
             }
         }
         public static Response AmazonS3RequestStasher(NancyContext context)
