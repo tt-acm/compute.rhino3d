@@ -1,5 +1,6 @@
 ﻿using Nancy.Extensions;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace compute.frontend
 {
@@ -11,15 +12,16 @@ namespace compute.frontend
 
             Get["/healthcheck"] = _ => "healthy";
 
-            Get["/"] =
-            Get["/{uri*}"] = _ =>
+            Get["/", true] =
+            Get["/{uri*}", true] = async(p, ct) =>
             {
-                var proxy_url = GetProxyUrl((string)_.uri, backendPort);
+                var proxy_url = GetProxyUrl((string)p.uri, backendPort);
                 var client = CreateProxyClient(Context);
                 try
                 {
-                    var backendResponse = client.GetAsync(proxy_url).Result;
-                    return CreateProxyResponse(backendResponse, Context);
+                    var backendResponse = await client.GetAsync(proxy_url, ct);
+                    var response = await CreateProxyResponse(backendResponse, Context);
+                    return response;
                 }
                 catch
                 {
@@ -27,10 +29,10 @@ namespace compute.frontend
                 }
             };
 
-            Post["/"] =
-            Post["/{uri*}"] = _ =>
+            Post["/", true] =
+            Post["{uri*}", true] = async (p, ct) =>
             {
-                var proxy_url = GetProxyUrl((string)_.uri, backendPort);
+                var proxy_url = GetProxyUrl((string)p.uri, backendPort);
                 var client = CreateProxyClient(Context);
                 object o_content;
                 StringContent content;
@@ -41,8 +43,9 @@ namespace compute.frontend
 
                 try
                 {
-                    var backendResponse = client.PostAsync(proxy_url, content).Result;
-                    return CreateProxyResponse(backendResponse, Context);
+                    var backendResponse = await client.PostAsync(proxy_url, content, ct);
+                    var response = await CreateProxyResponse(backendResponse, Context);
+                    return response;
                 }
                 catch
                 {
@@ -77,9 +80,9 @@ namespace compute.frontend
             return client;
         }
 
-        Nancy.Response CreateProxyResponse(HttpResponseMessage backendResponse, Nancy.NancyContext context)
+        async Task<Nancy.Response> CreateProxyResponse(HttpResponseMessage backendResponse, Nancy.NancyContext context)
         {
-            string responseBody = backendResponse.Content.ReadAsStringAsync().Result;
+            string responseBody = await backendResponse.Content.ReadAsStringAsync();
             var response = (Nancy.Response)responseBody;
             response.StatusCode = (Nancy.HttpStatusCode)backendResponse.StatusCode;
             foreach (var header in backendResponse.Headers)
