@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Nancy.Bootstrapper;
 using Nancy.Conventions;
 using Nancy.Extensions;
@@ -153,32 +155,38 @@ namespace compute.geometry
             Get["/healthcheck"] = _ => "healthy";
             Get["version"] = _ => FixedEndpoints.GetVersion(Context);
             Get["sdk/csharp"] = _ => FixedEndpoints.CSharpSdk(Context);
-            Post["hammertime"] = _ => FixedEndpoints.HammerTime(Context);
+            Post["hammertime", true] = async (p, ct) => {
+                return await Task.Run(() => {
+                    return FixedEndpoints.HammerTime(Context);
+                });
+            };
 
-            Get["/sdk"] = _ =>
+            Get["/sdk", true] = async(p, ct) =>
             {
-                var result = new StringBuilder("<!DOCTYPE html><html><body>");
-                var cache = routeCacheProvider.GetCache();
-                result.AppendLine($" <a href=\"/sdk/csharp\">C# SDK</a><BR>");
-                result.AppendLine("<p>API<br>");
+                return await Task.Run(() => { 
+                    var result = new StringBuilder("<!DOCTYPE html><html><body>");
+                    var cache = routeCacheProvider.GetCache();
+                    result.AppendLine($" <a href=\"/sdk/csharp\">C# SDK</a><BR>");
+                    result.AppendLine("<p>API<br>");
 
-                int route_index = 0;
-                foreach (var module in cache)
-                {
-                    foreach (var route in module.Value)
+                    int route_index = 0;
+                    foreach (var module in cache)
                     {
-                        var method = route.Item2.Method;
-                        var path = route.Item2.Path;
-                        if (method == "GET")
+                        foreach (var route in module.Value)
                         {
-                            route_index += 1;
-                            result.AppendLine($"{route_index} <a href='{path}'>{path}</a><BR>");
+                            var method = route.Item2.Method;
+                            var path = route.Item2.Path;
+                            if (method == "GET")
+                            {
+                                route_index += 1;
+                                result.AppendLine($"{route_index} <a href='{path}'>{path}</a><BR>");
+                            }
                         }
                     }
-                }
 
-                result.AppendLine("</p></body></html>");
-                return result.ToString();
+                    result.AppendLine("</p></body></html>");
+                    return result.ToString();
+                });
             };
 
             foreach (string nameSpace in new List<string>() {"Rhino.Geometry", "Rhino.Geometry.Intersect"})
@@ -186,8 +194,20 @@ namespace compute.geometry
                 foreach (var endpoint in CreateEndpoints(typeof(Rhino.RhinoApp).Assembly, nameSpace))
                 {
                     string key = endpoint.Path.ToLowerInvariant();
-                    Get[key] = _ => endpoint.Get(Context);
-                    Post[key] = _ => endpoint.Post(Context);
+                    Get[key, true] = async (p, ct) =>
+                    {
+                        return await Task<Nancy.Response>.Run(() =>
+                        {
+                            return endpoint.Get(Context);
+                        });
+                    };
+                    Post[key, true] = async (p, ct) =>
+                    {
+                        return await Task<Nancy.Response>.Run(() =>
+                        {
+                            return endpoint.Post(Context);
+                        });
+                    };
                 }
             }
 
