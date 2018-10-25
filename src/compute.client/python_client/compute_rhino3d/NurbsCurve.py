@@ -1,9 +1,9 @@
-import Util
+from . import Util
 
 
 def MakeCompatible(curves, startPt, endPt, simplifyMethod, numPoints, refitTolerance, angleTolerance):
     args = [curves, startPt, endPt, simplifyMethod, numPoints, refitTolerance, angleTolerance]
-    response = Util.ComputeFetch("rhino/geometry/nurbscurve/makecompatible-ienumerable<curve>_point3d_point3d_int_int_double_double", args)
+    response = Util.ComputeFetch("rhino/geometry/nurbscurve/makecompatible-curvearray_point3d_point3d_int_int_double_double", args)
     return response
 
 
@@ -31,21 +31,21 @@ def CreateFromCircle(circle, degree, cvCount):
     return response
 
 
-def SetEndCondition(nurbscurve, bSetEnd, continuity, point, tangent):
-    args = [nurbscurve, bSetEnd, continuity, point, tangent]
+def SetEndCondition(thisNurbsCurve, bSetEnd, continuity, point, tangent):
+    args = [thisNurbsCurve, bSetEnd, continuity, point, tangent]
     response = Util.ComputeFetch("rhino/geometry/nurbscurve/setendcondition-nurbscurve_bool_nurbscurveendconditiontype_point3d_vector3d", args)
     return response
 
 
-def SetEndCondition1(nurbscurve, bSetEnd, continuity, point, tangent, curvature):
-    args = [nurbscurve, bSetEnd, continuity, point, tangent, curvature]
+def SetEndCondition1(thisNurbsCurve, bSetEnd, continuity, point, tangent, curvature):
+    args = [thisNurbsCurve, bSetEnd, continuity, point, tangent, curvature]
     response = Util.ComputeFetch("rhino/geometry/nurbscurve/setendcondition-nurbscurve_bool_nurbscurveendconditiontype_point3d_vector3d_vector3d", args)
     return response
 
 
-def SetGrevillePoints(nurbscurve, points):
-    args = [nurbscurve, points]
-    response = Util.ComputeFetch("rhino/geometry/nurbscurve/setgrevillepoints-nurbscurve_ienumerable<point3d>", args)
+def SetGrevillePoints(thisNurbsCurve, points):
+    args = [thisNurbsCurve, points]
+    response = Util.ComputeFetch("rhino/geometry/nurbscurve/setgrevillepoints-nurbscurve_point3darray", args)
     return response
 
 
