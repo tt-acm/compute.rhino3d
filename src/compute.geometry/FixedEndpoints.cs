@@ -103,46 +103,50 @@ namespace compute.geometry
                     throw new Exception();
             }
 
-            var definition = new GH_Document();
-            if (!archive.ExtractObject(definition, "Definition"))
-                throw new Exception();
-
             //var outputs = new List<Rhino.Geometry.GeometryBase>();
             var outputs = new List<double>();
-            foreach (var obj in definition.Objects)
+            using (var definition = new GH_Document())
             {
-                var param = obj as IGH_Param;
-                if (param == null)
-                    continue;
+                if (!archive.ExtractObject(definition, "Definition"))
+                    throw new Exception();
 
-                if (param.Sources.Count == 0 || param.Recipients.Count != 0)
-                    continue;
+                foreach (var obj in definition.Objects)
+                {
+                    var param = obj as IGH_Param;
+                    if (param == null)
+                        continue;
 
-                try
-                {
-                    param.CollectData();
-                    param.ComputeData();
-                }
-                catch (Exception)
-                {
-                    param.Phase = GH_SolutionPhase.Failed;
-                    // TODO: throw something better
-                    throw;
-                }
+                    if (param.Sources.Count == 0 || param.Recipients.Count != 0)
+                        continue;
 
-                var output = new List<Rhino.Geometry.GeometryBase>();
-                var volatileData = param.VolatileData;
-                for (int p = 0; p < volatileData.PathCount; p++)
-                {
-                    foreach (var goo in volatileData.get_Branch(p))
+                    try
                     {
-                        switch (goo)
+                        param.CollectData();
+                        param.ComputeData();
+                    }
+                    catch (Exception)
+                    {
+                        param.Phase = GH_SolutionPhase.Failed;
+                        // TODO: throw something better
+                        throw;
+                    }
+
+                    //var output = new List<Rhino.Geometry.GeometryBase>();
+                    var volatileData = param.VolatileData;
+                    for (int p = 0; p < volatileData.PathCount; p++)
+                    {
+                        foreach (var goo in volatileData.get_Branch(p))
                         {
-                            //case GH_Point point: output.Add(new Rhino.Geometry.Point(point.Value)); break;
-                            //case GH_Curve curve: output.Add(curve.Value); break;
-                            //case GH_Brep brep: output.Add(brep.Value); break;
-                            //case GH_Mesh mesh: output.Add(mesh.Value); break;
-                            case GH_Number number: outputs.Add(number.Value); break;
+                            switch (goo)
+                            {
+                                //case GH_Point point: output.Add(new Rhino.Geometry.Point(point.Value)); break;
+                                //case GH_Curve curve: output.Add(curve.Value); break;
+                                //case GH_Brep brep: output.Add(brep.Value); break;
+                                //case GH_Mesh mesh: output.Add(mesh.Value); break;
+                                case GH_Number number:
+                                    outputs.Add(number.Value);
+                                    break;
+                            }
                         }
                     }
                 }
