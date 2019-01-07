@@ -30,6 +30,27 @@ namespace computegen
             Console.WriteLine("Writing C# client");
             var cs = new DotNetClient();
             cs.Write(ClassBuilder.AllClasses, "RhinoCompute.cs", filter);
+
+            StringBuilder sb = new StringBuilder();
+            foreach(var cl in ClassBuilder.AllClasses)
+            {
+                if (cl.Value.Methods.Count == 0)
+                    continue;
+                sb.AppendLine(cl.Key);
+                foreach (var m in cl.Value.Methods)
+                    sb.AppendLine($"  {m.Item1.Identifier}");
+            }
+            System.IO.File.WriteAllText("compute.txt", sb.ToString());
+            sb = new StringBuilder();
+            foreach (var cl in ClassBuilder.AllClasses)
+            {
+                if (cl.Value.NonComputeMethods.Count == 0)
+                    continue;
+                sb.AppendLine(cl.Key);
+                foreach (var m in cl.Value.NonComputeMethods)
+                    sb.AppendLine($"  {m.Item1.Identifier}");
+            }
+            System.IO.File.WriteAllText("rhino3dm.txt", sb.ToString());
         }
 
     }

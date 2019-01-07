@@ -109,6 +109,7 @@ namespace computegen
         }
 
         public List<Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>> Methods { get; } = new List<Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>>();
+        public List<Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>> NonComputeMethods { get; } = new List<Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>>();
 
         public string EndPoint(MethodDeclarationSyntax method)
         {
@@ -202,7 +203,13 @@ namespace computegen
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            if (!_buildingSpans && InSpans(node.Span))
+            if( _buildingSpans)
+            {
+                base.VisitMethodDeclaration(node);
+                return;
+            }
+
+            bool inPrivateSDK = InSpans(node.Span);
             {
                 bool isPublic = node.IsPublic();
                 bool isStatic = node.IsStatic();
@@ -233,7 +240,10 @@ namespace computegen
                         string visitingClass = ClassName(tds);
 
                         var docComment = node.GetLeadingTrivia().Select(i => i.GetStructure()).OfType<DocumentationCommentTriviaSyntax>().FirstOrDefault();
-                        ClassBuilder.Get(visitingClass).Methods.Add(new Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>(node, docComment));
+                        if (inPrivateSDK)
+                            ClassBuilder.Get(visitingClass).Methods.Add(new Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>(node, docComment));
+                        else
+                            ClassBuilder.Get(visitingClass).NonComputeMethods.Add(new Tuple<MethodDeclarationSyntax, DocumentationCommentTriviaSyntax>(node, docComment));
                     }
                 }
             }
