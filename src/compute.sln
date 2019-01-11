@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compute.frontend", "compute
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resthopper.GH", "Resthopper.GH\Resthopper.GH.csproj", "{08E89F47-3763-4169-8468-EA93FC963021}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resthopper.IO", "Resthopper.IO\Resthopper.IO.csproj", "{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,6 +39,14 @@ Global
 		{08E89F47-3763-4169-8468-EA93FC963021}.Release|Any CPU.Build.0 = Release|Any CPU
 		{08E89F47-3763-4169-8468-EA93FC963021}.Release|x64.ActiveCfg = Release|Any CPU
 		{08E89F47-3763-4169-8468-EA93FC963021}.Release|x64.Build.0 = Release|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Debug|x64.Build.0 = Debug|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Release|x64.ActiveCfg = Release|Any CPU
+		{5CA8BC3B-4CDA-44B5-81CD-E5E5E73B0CEE}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
