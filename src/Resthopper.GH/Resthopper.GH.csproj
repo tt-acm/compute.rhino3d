@@ -52,6 +52,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -74,6 +76,12 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Resthopper.IO\Resthopper.IO.csproj">
+      <Project>{5ca8bc3b-4cda-44b5-81cd-e5e5e73b0cee}</Project>
+      <Name>Resthopper.IO</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\RhinoCommon.7.0.19009.12085-wip\build\net45\RhinoCommon.targets" Condition="Exists('..\packages\RhinoCommon.7.0.19009.12085-wip\build\net45\RhinoCommon.targets')" />
