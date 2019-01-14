@@ -62,28 +62,35 @@ namespace Resthopper.GH
                 {
                     // clean inputs
                     IGH_Param pt = this.Params.Input[0];
-                    int index = 1;
-                    foreach(IGH_Param p in this.Params.Input)
+                    //int index = 1;
+                    while (this.Params.Input.Count > 1)
                     {
+                        IGH_Param p = this.Params.Input[1];
                         p.RemoveAllSources();
                         p.ClearData();
-                        Params.UnregisterInputParameter(Params.Input[index]);
-                        index++;
+                        Params.UnregisterInputParameter(Params.Input[1]);
+                        //index++;
                     }
                     //this.Params.Input.Clear();
                     this.Params.RegisterInputParam(pt);
+                    
                     
                 }
                 if (this.Params.Output.Count > 0)
                 {
                     // clean inputs
-                    int index = 0;
-                    foreach (IGH_Param p in this.Params.Output)
+                    //int index = 0;
+                    while (this.Params.Output.Count > 0)
                     {
+                        IGH_Param p = this.Params.Output[0];
                         p.RemoveAllSources();
                         p.ClearData();
-                        Params.UnregisterOutputParameter(Params.Input[index]);
-                        index++;
+                        Params.UnregisterOutputParameter(Params.Output[0]);
+                        //index++;
+                    }
+                    foreach (IGH_Param p in this.Params.Output)
+                    {
+                        
                     }
                     //this.Params.Output.Clear();
                 }
@@ -109,8 +116,9 @@ namespace Resthopper.GH
                 this.doc.ExpirePreview(true);
                 this.Attributes.ExpireLayout();
 
-                
-                
+
+
+
             }
 
             if (this.lastPointer == pointer)
