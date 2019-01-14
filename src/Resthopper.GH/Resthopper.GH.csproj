@@ -97,4 +97,8 @@
     <Error Condition="!Exists('..\packages\Grasshopper.7.0.19009.12085-wip\build\net45\Grasshopper.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Grasshopper.7.0.19009.12085-wip\build\net45\Grasshopper.targets'))" />
   </Target>
   <Import Project="..\packages\Grasshopper.7.0.19009.12085-wip\build\net45\Grasshopper.targets" Condition="Exists('..\packages\Grasshopper.7.0.19009.12085-wip\build\net45\Grasshopper.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>Copy "$(TargetPath)" "$(TargetDir)$(ProjectName).gha"
+Erase "$(TargetPath)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
