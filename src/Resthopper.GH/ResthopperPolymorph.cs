@@ -14,7 +14,7 @@ using Grasshopper.Kernel.Data;
 
 namespace Resthopper.GH
 {
-    public class ResthopperPolymorph : GH_Component
+    public class ResthopperPolymorph : GH_Component, IGH_VariableParameterComponent
     {
         /// <summary>
         /// Initializes a new instance of the ResthopperPolymorph class.
@@ -31,6 +31,9 @@ namespace Resthopper.GH
         private string lastPointer = string.Empty;
         private IoResponseSchema io = new IoResponseSchema();
         private GH_Document doc;
+
+        private string inputName;
+        private string outputName;
         /// <summary>
         /// Registers all the input parameters for this component.
         /// </summary>
@@ -58,20 +61,25 @@ namespace Resthopper.GH
 
             if (pointer != this.lastPointer)
             {
+                //int index = 0;
+                //foreach (IGH_Param p in Params.Input)
+                //{
+                //    if (index > 0 && p.SourceCount > 0)
+                //    {
+                //        p.RemoveAllSources();
+                //        p.ClearData();
+                //    }
+                //    index++;
+                //}
+                
                 if (this.Params.Input.Count > 1)
                 {
                     // clean inputs
                     IGH_Param pt = this.Params.Input[0];
-                    //int index = 1;
                     while (this.Params.Input.Count > 1)
                     {
-                        IGH_Param p = this.Params.Input[1];
-                        p.RemoveAllSources();
-                        p.ClearData();
-                        Params.UnregisterInputParameter(Params.Input[1]);
-                        //index++;
+                        DestroyParameter(GH_ParameterSide.Input, 1);
                     }
-                    //this.Params.Input.Clear();
                     this.Params.RegisterInputParam(pt);
                     
                     
@@ -79,42 +87,30 @@ namespace Resthopper.GH
                 if (this.Params.Output.Count > 0)
                 {
                     // clean inputs
-                    //int index = 0;
                     while (this.Params.Output.Count > 0)
                     {
-                        IGH_Param p = this.Params.Output[0];
-                        p.RemoveAllSources();
-                        p.ClearData();
-                        Params.UnregisterOutputParameter(Params.Output[0]);
-                        //index++;
+                        DestroyParameter(GH_ParameterSide.Output, 0);
                     }
-                    foreach (IGH_Param p in this.Params.Output)
-                    {
-                        
-                    }
-                    //this.Params.Output.Clear();
                 }
 
 
                 io = await GetIO(pointer);
                 foreach (string input in io.InputNames)
                 {
-                    IGH_Param param = ParamFromName(input);
-                    if (param != null)
-                    {
-                        this.Params.RegisterInputParam(param);
-                    }
+                    this.inputName = input;
+                    CreateParameter(GH_ParameterSide.Input, this.Params.Input.Count + 1);
                 }
                 foreach (string output in io.OutputNames)
                 {
-                    IGH_Param param = ParamFromName(output);
-                    if (param != null)
-                    {
-                        this.Params.RegisterOutputParam(param);
-                    }
+                    this.outputName = output;
+                    CreateParameter(GH_ParameterSide.Output, this.Params.Output.Count + 1);
                 }
+
+                Params.OnParametersChanged();
+                VariableParameterMaintenance();
                 this.doc.ExpirePreview(true);
                 this.Attributes.ExpireLayout();
+                this.ExpireSolution(true);
 
 
 
@@ -661,6 +657,58 @@ namespace Resthopper.GH
             rhObj.Type = goo.GetType().FullName;
             rhObj.Data = JsonConvert.SerializeObject(v);
             return rhObj;
+        }
+
+        public bool CanInsertParameter(GH_ParameterSide side, int index)
+        {
+            return false;
+        }
+
+        public bool CanRemoveParameter(GH_ParameterSide side, int index)
+        {
+            return true;
+        }
+
+        public IGH_Param CreateParameter(GH_ParameterSide side, int index)
+        {
+            IGH_Param param = null;
+            if (side == GH_ParameterSide.Input)
+            {
+                param = ParamFromName(this.inputName);
+                this.Params.RegisterInputParam(param, index);
+            }
+            else if (side == GH_ParameterSide.Output)
+            {
+                param = ParamFromName(this.outputName);
+                this.Params.RegisterOutputParam(param, index);
+            }
+            return param;
+        }
+
+        public bool DestroyParameter(GH_ParameterSide side, int index)
+        {
+            IGH_Param p;
+            if (side == GH_ParameterSide.Input)
+            {
+                Params.UnregisterInputParameter(Params.Input[index]);
+            }
+            else
+            {
+                Params.UnregisterOutputParameter(Params.Output[index]);
+            }
+            
+            //p.RemoveAllSources();
+            //p.ClearData();
+            
+
+            return true;
+        }
+
+        public void VariableParameterMaintenance()
+        {
+
+            
+            
         }
     }
 }
