@@ -230,7 +230,7 @@ namespace compute.geometry
                                             catch
                                             {
                                                 Rhino.Geometry.NurbsCurve data = JsonConvert.DeserializeObject<Rhino.Geometry.NurbsCurve>(restobj.Data);
-                                                Rhino.Geometry.Curve c = new Rhino.Geometry.NurbsCurve(data);
+                                                Rhino.Geometry.Curve c = data;
                                                 ghCurve = new GH_Curve(c);
                                             }
                                             curveParam.AddVolatileData(path, i, ghCurve);
