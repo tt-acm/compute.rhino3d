@@ -31,7 +31,7 @@ namespace Resthopper.IO
             //settings.ContractResolver = new DictionaryAsArrayResolver();
             string json = JsonConvert.SerializeObject(InputSchema);
 
-            File.WriteAllText(@"C:\Users\epoulsen\Documents\ColumnDesignApp_Local\voronoiRequest2.json", json);
+            //File.WriteAllText(@"C:\Users\epoulsen\Documents\ColumnDesignApp_Local\voronoiRequest2.json", json);
 
             string response = ApiRequest(Server, Token, "POST", "string", "/grasshopper", json);
 
