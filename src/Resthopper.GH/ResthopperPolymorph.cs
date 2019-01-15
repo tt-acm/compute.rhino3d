@@ -58,6 +58,7 @@ namespace Resthopper.GH
             this.doc = OnPingDocument();
             string pointer = null;
             DA.GetData(0, ref pointer);
+            this.Params.ParameterChanged += this.OnParamsChanged;
 
             if (pointer != this.lastPointer)
             {
@@ -71,29 +72,6 @@ namespace Resthopper.GH
                 //    }
                 //    index++;
                 //}
-                
-                if (this.Params.Input.Count > 1)
-                {
-                    // clean inputs
-                    IGH_Param pt = this.Params.Input[0];
-                    while (this.Params.Input.Count > 1)
-                    {
-                        DestroyParameter(GH_ParameterSide.Input, 1);
-                    }
-                    this.Params.RegisterInputParam(pt);
-                    
-                    
-                }
-                if (this.Params.Output.Count > 0)
-                {
-                    // clean inputs
-                    while (this.Params.Output.Count > 0)
-                    {
-                        DestroyParameter(GH_ParameterSide.Output, 0);
-                    }
-                }
-
-
                 io = await GetIO(pointer);
                 foreach (string input in io.InputNames)
                 {
@@ -105,6 +83,30 @@ namespace Resthopper.GH
                     this.outputName = output;
                     CreateParameter(GH_ParameterSide.Output, this.Params.Output.Count + 1);
                 }
+
+                if (this.Params.Input.Count > io.InputNames.Count + 1)
+                {
+                    // clean inputs
+                    IGH_Param pt = this.Params.Input[0];
+                    while (this.Params.Input.Count != io.InputNames.Count + 1)
+                    {
+                        DestroyParameter(GH_ParameterSide.Input, 1);
+                    }
+                    this.Params.RegisterInputParam(pt);
+                    
+                    
+                }
+                if (this.Params.Output.Count > io.OutputNames.Count)
+                {
+                    // clean inputs
+                    while (this.Params.Output.Count != io.OutputNames.Count)
+                    {
+                        DestroyParameter(GH_ParameterSide.Output, 0);
+                    }
+                }
+
+
+                
 
                 Params.OnParametersChanged();
                 VariableParameterMaintenance();
@@ -569,6 +571,11 @@ namespace Resthopper.GH
                 }
             }
             this.lastPointer = pointer;
+        }
+
+        private void OnParamsChanged(object sender, GH_ParamServerEventArgs e)
+        {
+            
         }
 
         private static IGH_Param ParamFromName(string name)
