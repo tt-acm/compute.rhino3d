@@ -28,6 +28,8 @@ namespace Resthopper.GH
         private static HttpClient httpClient = new HttpClient();
         private static string ioRoute = "http://localhost:8081/io";
         private static string ghRoute = "http://localhost:8081/grasshopper";
+        //private static string ioRoute = "http://10.1.14.53:8081/io";
+        //private static string ghRoute = "http://10.1.14.53:8081/grasshopper";
         private string lastPointer = string.Empty;
         private IoResponseSchema io = new IoResponseSchema();
         private GH_Document doc;
@@ -62,27 +64,21 @@ namespace Resthopper.GH
 
             if (pointer != this.lastPointer)
             {
-                //int index = 0;
-                //foreach (IGH_Param p in Params.Input)
-                //{
-                //    if (index > 0 && p.SourceCount > 0)
-                //    {
-                //        p.RemoveAllSources();
-                //        p.ClearData();
-                //    }
-                //    index++;
-                //}
                 io = await GetIO(pointer);
                 foreach (string input in io.InputNames)
                 {
                     this.inputName = input;
                     CreateParameter(GH_ParameterSide.Input, this.Params.Input.Count + 1);
+                    Params.OnParametersChanged();
                 }
                 foreach (string output in io.OutputNames)
                 {
                     this.outputName = output;
                     CreateParameter(GH_ParameterSide.Output, this.Params.Output.Count + 1);
+                    Params.OnParametersChanged();
                 }
+
+                this.ExpireSolution(true);
 
                 if (this.Params.Input.Count > io.InputNames.Count + 1)
                 {
@@ -98,7 +94,7 @@ namespace Resthopper.GH
                 }
                 if (this.Params.Output.Count > io.OutputNames.Count)
                 {
-                    // clean inputs
+                    // clean outputs
                     while (this.Params.Output.Count != io.OutputNames.Count)
                     {
                         DestroyParameter(GH_ParameterSide.Output, 0);
@@ -697,12 +693,17 @@ namespace Resthopper.GH
             IGH_Param p;
             if (side == GH_ParameterSide.Input)
             {
+                Params.Input[index].RemoveAllSources();
+                Params.Input[index].ClearData();
                 Params.UnregisterInputParameter(Params.Input[index]);
             }
             else
             {
+                Params.Output[index].RemoveAllSources();
+                Params.Output[index].ClearData();
                 Params.UnregisterOutputParameter(Params.Output[index]);
             }
+            Params.OnParametersChanged();
             
             //p.RemoveAllSources();
             //p.ClearData();
