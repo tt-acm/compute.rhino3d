@@ -163,8 +163,11 @@ namespace compute.geometry
             Get[""] = _ => FixedEndpoints.HomePage(Context);
             Get["/healthcheck"] = _ => "healthy";
             Get["version"] = _ => FixedEndpoints.GetVersion(Context);
+            Get["servertime"] = _ => FixedEndpoints.ServerTime(Context);
             Get["sdk/csharp"] = _ => FixedEndpoints.CSharpSdk(Context);
             Post["hammertime"] = _ => FixedEndpoints.HammerTime(Context);
+            Post["/grasshopper"] = _ => ResthopperEndpoints.Grasshopper(Context);
+            Post["/io"] = _ => ResthopperEndpoints.GetIoNames(Context);
 
             Get["/sdk"] = _ =>
             {
@@ -207,6 +210,12 @@ namespace compute.geometry
                 }
             }
 
+            // Load GH at startup so it can get initialized on the main thread
+            var pluginObject = Rhino.RhinoApp.GetPlugInObject("Grasshopper");
+            var runheadless = pluginObject?.GetType().GetMethod("RunHeadless");
+            if (runheadless != null)
+                runheadless.Invoke(pluginObject, null);
+
             //var script = Rhino.Runtime.PythonScript.Create();
             //if( script != null )
             //{
@@ -215,14 +224,12 @@ namespace compute.geometry
             //        string key = endpoint.Path.ToLowerInvariant();
             //        Get[key] = _ => endpoint.Get(Context);
             //        Post[key] = _ => endpoint.Post(Context);
-
             //    }
             //}
-
         }
     }
 
-    // TODO Make ArchibaleDictionary serializable
+    // TODO Make ArchivaleDictionary serializable
     //class Python
     //{
     //    public static Rhino.Collections.ArchivableDictionary Evaluate(string script,
